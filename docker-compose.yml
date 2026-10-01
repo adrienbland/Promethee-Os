@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jarvis_backend
+    ports:
+      - "8005:8005"
+    volumes:
+      - ./backend:/app
+      - ${OBSIDIAN_VAULT_PATH}:/app/obsidian_vault
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /:/host_root # Accès complet au système hôte (en lecture/écriture) via /host_root
+      - /home/snow:/home/snow # Accès TOTAL au dossier personnel de l'hôte (dev, homelab, etc.)
+      - /home/snow/.gemini:/root/.gemini # Partage de l'authentification Antigravity
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - jarvis_network
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jarvis_frontend
+    ports:
+      - "3005:3000" # Next.js run inside on 3000, exposed on 3005
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - jarvis_network
+
+networks:
+  jarvis_network:
+    driver: bridge
